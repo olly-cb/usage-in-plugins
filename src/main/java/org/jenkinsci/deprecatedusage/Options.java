@@ -49,6 +49,9 @@ public class Options {
     @Option(name = "-i", aliases = "--onlyIncludeSpecified", usage = "Only include in the report the specified classes/methods/fields")
     public boolean onlyIncludeSpecified;
 
+    @Option(name = "-p", aliases = "--includePluginLibs", usage = "Also scan libraries bundled inside plugins")
+    public boolean includePluginLibraries;
+
     @Option(name = "--onlyIncludeJenkinsClasses", usage = "Only include in the report Jenkins related classes (jenkins.*, hudson.*, etc.")
     public boolean onlyIncludeJenkinsClasses;
 

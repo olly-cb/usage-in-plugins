@@ -108,7 +108,7 @@ public class Main {
             Collection<JenkinsFile> downloadedPlugins = downloader.synchronize(plugins).get();
 
             System.out.println("Analyzing usage in plugins");
-            final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedApi, executor);
+            final List<DeprecatedUsage> deprecatedUsages = analyzeDeprecatedUsage(downloadedPlugins, deprecatedApi, executor, options.includePluginLibraries);
 
             Report[] reports = new Report[]{
                     new DeprecatedUsageByPluginReport(deprecatedApi, deprecatedUsages, new File("output"), "usage-by-plugin"),
@@ -142,12 +142,12 @@ public class Main {
     }
 
     private static List<DeprecatedUsage> analyzeDeprecatedUsage(Collection<JenkinsFile> plugins, DeprecatedApi deprecatedApi,
-                                                                Executor executor)
+                                                                Executor executor, boolean scanPluginLibs)
             throws InterruptedException, ExecutionException {
         List<CompletableFuture<DeprecatedUsage>> futures = new ArrayList<>();
         for (JenkinsFile plugin : plugins) {
             futures.add(CompletableFuture.supplyAsync(() -> {
-                DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(), plugin.getVersion(), deprecatedApi);
+                DeprecatedUsage deprecatedUsage = new DeprecatedUsage(plugin.getName(), plugin.getVersion(), deprecatedApi, scanPluginLibs);
                 try {
                     deprecatedUsage.analyze(plugin.getFile());
                 } catch (final EOFException | ZipException | FileNotFoundException e) {

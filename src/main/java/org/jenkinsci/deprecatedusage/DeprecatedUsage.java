@@ -28,6 +28,7 @@ public class DeprecatedUsage {
 
     private final Plugin plugin;
     private final DeprecatedApi deprecatedApi;
+    private final boolean includePluginLibraries;
 
     private final Set<String> classes = new LinkedHashSet<>();
     private final Set<String> methods = new LinkedHashSet<>();
@@ -36,10 +37,11 @@ public class DeprecatedUsage {
     private final ClassVisitor classVisitor = new CallersClassVisitor();
     private final Map<String, List<String>> superClassAndInterfacesByClass = new HashMap<>();
 
-    public DeprecatedUsage(String pluginName, String pluginVersion, DeprecatedApi deprecatedApi) {
+    public DeprecatedUsage(String pluginName, String pluginVersion, DeprecatedApi deprecatedApi, boolean includePluginLibraries) {
         super();
         this.plugin = new Plugin(pluginName, pluginVersion);
         this.deprecatedApi = deprecatedApi;
+        this.includePluginLibraries = includePluginLibraries;
     }
 
     public void analyze(File pluginFile) throws IOException {
@@ -54,7 +56,7 @@ public class DeprecatedUsage {
             throws IOException {
         // recent plugins package their classes as a jar file with the same name as the war file in
         // WEB-INF/lib/ while older plugins were packaging their classes in WEB-INF/classes/
-        try (WarReader warReader = new WarReader(pluginFile, true)) {
+        try (WarReader warReader = new WarReader(pluginFile, !includePluginLibraries)) {
             String fileName = warReader.nextClass();
             while (fileName != null) {
                 analyze(warReader.getInputStream(), aClassVisitor);
