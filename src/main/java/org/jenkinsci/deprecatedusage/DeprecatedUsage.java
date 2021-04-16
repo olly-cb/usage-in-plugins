@@ -52,6 +52,7 @@ public class DeprecatedUsage {
         analyzeWithClassVisitor(pluginFile, classVisitor);
     }
 
+    
     public void analyzeWithClassVisitor(File pluginFile, ClassVisitor aClassVisitor)
             throws IOException {
         // recent plugins package their classes as a jar file with the same name as the war file in
@@ -59,7 +60,9 @@ public class DeprecatedUsage {
         try (WarReader warReader = new WarReader(pluginFile, !includePluginLibraries)) {
             String fileName = warReader.nextClass();
             while (fileName != null) {
-                try (InputStream is = warReader.getInputStream()) {
+                try {
+                    @SuppressWarnings("resource") // handled by warReader.nextClass()
+                    InputStream is = warReader.getInputStream();
                     analyze(is, aClassVisitor);
                 } catch (Exception e) {
                     System.err.println("Failed to fully analyze " + pluginFile + ".  " + fileName + " not scanned due to -> ");
