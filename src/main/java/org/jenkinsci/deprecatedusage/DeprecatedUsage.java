@@ -228,7 +228,7 @@ public class DeprecatedUsage {
      */
     private class IndexerClassVisitor extends ClassVisitor {
         IndexerClassVisitor() {
-            super(Opcodes.ASM5);
+            super(Opcodes.ASM9);
         }
 
         @Override
@@ -260,7 +260,7 @@ public class DeprecatedUsage {
      */
     private class CallersClassVisitor extends ClassVisitor {
         CallersClassVisitor() {
-            super(Opcodes.ASM5);
+            super(Opcodes.ASM9);
         }
 
         @Override
@@ -276,7 +276,7 @@ public class DeprecatedUsage {
      */
     private class CallersMethodVisitor extends MethodVisitor {
         CallersMethodVisitor() {
-            super(Opcodes.ASM5);
+            super(Opcodes.ASM9);
         }
 
         @Override
