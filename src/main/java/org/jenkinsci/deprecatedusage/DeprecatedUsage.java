@@ -235,8 +235,11 @@ public class DeprecatedUsage {
         public void visit(int version, int access, String name, String signature, String superName,
                 String[] interfaces) {
             // log(name + " extends " + superName + " {");
+            
             final List<String> superClassAndInterfaces = new ArrayList<>();
-            if (!isJavaClass(superName)) {
+            // superClass may be null for java.lang.Object and module-info.class
+            // Object would have been filtered but we see lots of module-info classes
+            if (superName != null && !isJavaClass(superName)) {
                 superClassAndInterfaces.add(superName);
             }
             if (interfaces != null) {
