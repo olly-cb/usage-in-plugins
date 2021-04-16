@@ -73,6 +73,7 @@ public class DeprecatedUsageByApiReport extends Report {
         }
     }
 
+    @Override
     protected void generateHtmlReport(Writer writer) throws IOException {
         writer.append("<h1>Deprecated Usage in Plugins By API</h1>");
 
@@ -119,6 +120,7 @@ public class DeprecatedUsageByApiReport extends Report {
         }
     }
 
+    @Override
     protected void generateJsonReport(Writer writer) throws IOException {
         JSONObject map = new JSONObject();
 

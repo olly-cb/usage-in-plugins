@@ -19,6 +19,7 @@ public class DeprecatedUsageByPluginReport extends Report {
         super(api, usages, outputDir, reportName);
     }
 
+    @Override
     protected void generateHtmlReport(Writer writer) throws IOException {
         SortedSet<DeprecatedUsage> set = new TreeSet<>(Comparator.comparing(DeprecatedUsage::getPlugin));
         set.addAll(usages);
@@ -59,6 +60,7 @@ public class DeprecatedUsageByPluginReport extends Report {
         }
     }
 
+    @Override
     protected void generateJsonReport(Writer writer) throws IOException {
         JSONObject map = new JSONObject();
         for (DeprecatedUsage usage : usages) {

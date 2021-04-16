@@ -14,6 +14,7 @@ public class DeprecatedUnusedApiReport extends Report {
         super(api, usages, outputDir, reportName);
     }
 
+    @Override
     protected void generateHtmlReport(Writer writer) throws IOException {
         writer.append("<h1>Unused Deprecated APIs</h1>");
 
@@ -69,6 +70,7 @@ public class DeprecatedUnusedApiReport extends Report {
         }
     }
 
+    @Override
     protected void generateJsonReport(Writer writer) throws IOException {
         JSONObject obj = new JSONObject();
 

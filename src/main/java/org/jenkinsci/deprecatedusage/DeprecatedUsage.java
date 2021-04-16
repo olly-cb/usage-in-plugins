@@ -279,6 +279,7 @@ public class DeprecatedUsage {
             super(Opcodes.ASM9);
         }
 
+        @Deprecated
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc) {
             // log("\t" + owner + " " + name + " " + desc);
