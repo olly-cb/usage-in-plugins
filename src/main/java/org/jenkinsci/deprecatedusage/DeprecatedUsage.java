@@ -59,7 +59,12 @@ public class DeprecatedUsage {
         try (WarReader warReader = new WarReader(pluginFile, !includePluginLibraries)) {
             String fileName = warReader.nextClass();
             while (fileName != null) {
-                analyze(warReader.getInputStream(), aClassVisitor);
+                try (InputStream is = warReader.getInputStream()) {
+                    analyze(is, aClassVisitor);
+                } catch (Exception e) {
+                    System.err.println("Failed to fully analyze " + pluginFile + ".  " + fileName + " not scanned due to -> ");
+                    e.printStackTrace();
+                }
                 fileName = warReader.nextClass();
             }
         }
