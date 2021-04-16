@@ -1,12 +1,15 @@
 package org.jenkinsci.deprecatedusage;
 
 import org.apache.commons.io.IOUtils;
-
+import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
+import java.net.SocketException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,7 +51,14 @@ public class Downloader {
                 }
                 download(file).handle((success, failure) -> {
                     if (failure != null) {
-                        failure.printStackTrace();
+                        // do not throw away the message!
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        pw.println("failure synching " + file.getName());
+                        pw.println(failure.getMessage());
+                        failure.printStackTrace(pw);
+                        pw.flush();
+                        System.err.println(sw.toString());
                     } else {
                         synced.add(file);
                     }
@@ -98,33 +108,53 @@ public class Downloader {
 
         private void doRun() throws IOException, DigestException {
             URL url = new URL(file.getUrl());
-            HttpURLConnection request = (HttpURLConnection) url.openConnection();
-            int responseCode = request.getResponseCode();
-            if (responseCode == 502 && retriesRemaining.getAndDecrement() > 0) {
-                // flaky update center
-                doRun();
-            } else if (responseCode >= 400) {
-                throw new HttpResponseException(responseCode, request.getResponseMessage());
-            } else {
-                long fileSize;
-                try (InputStream in = request.getInputStream();
-                     OutputStream out = file.getFileOutputStream()) {
-                    fileSize = IOUtils.copyLarge(in, out);
-                } catch (IOException e) {
-                    if ("Premature EOF".equals(e.getMessage()) && retriesRemaining.getAndDecrement() > 0) {
-                        // flaky update center
-                        doRun();
-                        return;
+            try {
+                HttpURLConnection request = (HttpURLConnection) url.openConnection();
+                int responseCode = request.getResponseCode();
+                if (responseCode == 502) {
+                    throw new IOException("Flaky Update Center returned HTTP 502");
+                } else if (responseCode >= 400) {
+                    throw new HttpResponseException(responseCode, request.getResponseMessage());
+                } else {
+                    long fileSize;
+                    try (InputStream in = request.getInputStream();
+                         OutputStream out = file.getFileOutputStream()) {
+                        fileSize = IOUtils.copyLarge(in, out);
+                    }
+                    if (file.isFileMessageDigestValid()) {
+                        System.out.printf("Downloaded %s @ %.2f kiB%n", file.getUrl(), (fileSize / 1024.0));
                     } else {
-                        throw e;
+                        throw new DigestException("Downloaded file message digest does not match update center for " + url);
                     }
                 }
-                if (file.isFileMessageDigestValid()) {
-                    System.out.printf("Downloaded %s @ %.2f kiB%n", file.getUrl(), (fileSize / 1024.0));
+            } catch (IOException ioEx) {
+                if (shouldRetryForException(ioEx) && retriesRemaining.getAndDecrement() > 0) {
+                    try {
+                        System.out.printf("Failed to download %s due to %s, will retry in 750ms%n", StringUtils.isEmpty(ioEx.getMessage()) ? ioEx.getClass().getName() : ioEx.getMessage() , file.getUrl());
+                        Thread.sleep(7500L);
+                    } catch (InterruptedException ex) {
+                        IOException toThrow = new IOException("InterruptedException in sleep backoff", ex);
+                        toThrow.addSuppressed(ioEx);
+                        throw toThrow;
+                    }
+                    doRun();
                 } else {
-                    throw new DigestException("Downloaded file message digest does not match update center for " + url);
+                    throw ioEx;
                 }
             }
+        }
+
+        private boolean shouldRetryForException(IOException ioEx) {
+            if (ioEx instanceof SocketException) {
+                return true;
+            }
+            if ("Premature EOF".equals(ioEx.getMessage())) {
+                return true;
+            }
+            if ("Flaky Update Center returned HTTP 502".equals(ioEx.getMessage())) {
+                return true;
+            }
+            return false;
         }
     }
 }
