@@ -3,11 +3,9 @@ package org.jenkinsci.deprecatedusage;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,10 +13,8 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
-import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestException;
@@ -174,7 +170,7 @@ public class Downloader implements Closeable {
                 if (response.getStatus() == 502) {
                     response.abort(new IOException("Flaky Update Center returned HTTP 502"));
                 } else if (response.getStatus() >= 400) {
-                    response.abort(new HttpResponseException(response.getStatus(), response.getReason());
+                    response.abort(new HttpResponseException(response.getStatus(), response.getReason()));
                 }
                 long fileSize;
                 try (InputStream in = listener.getInputStream();
