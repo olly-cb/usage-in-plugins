@@ -2,6 +2,11 @@ package org.jenkinsci.deprecatedusage;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,18 +24,36 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Downloader {
+public class Downloader implements Closeable {
     private final ExecutorService executor;
     private final Semaphore concurrentDownloadsPermit;
 
-    public Downloader(ExecutorService executor, int maxConcurrentDownloads) {
+    private HttpClient httpClient;
+
+    public Downloader(ExecutorService executor, int maxConcurrentDownloads) throws Exception {
         this.executor = executor;
         concurrentDownloadsPermit = new Semaphore(maxConcurrentDownloads);
+        // TODO more configuration
+        this.httpClient = new HttpClient();
+        this.httpClient.start();
+    }
+
+    @Override
+    public void close() throws IOException {
+        if(this.httpClient!=null) {
+            try {
+                this.httpClient.stop();
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
     }
 
     public Collection<JenkinsFile> useExistingFiles(Collection<JenkinsFile> files){
@@ -120,20 +143,34 @@ public class Downloader {
         private void doRun() throws IOException, DigestException {
             URL url = new URL(file.getUrl());
             try {
-                URLConnection con = url.openConnection();
-                if (url.getProtocol().equalsIgnoreCase("https") || url.getProtocol().equalsIgnoreCase("http")) {
-                    HttpURLConnection request = (HttpURLConnection) url.openConnection();
-                    int responseCode = request.getResponseCode();
-                    if (responseCode == 502) {
-                        throw new IOException("Flaky Update Center returned HTTP 502");
-                    } else if (responseCode >= 400) {
-                        throw new HttpResponseException(responseCode, request.getResponseMessage());
+//                URLConnection con = url.openConnection();
+//                if (url.getProtocol().equalsIgnoreCase("https") || url.getProtocol().equalsIgnoreCase("http")) {
+//                    HttpURLConnection request = (HttpURLConnection) url.openConnection();
+//                    int responseCode = request.getResponseCode();
+//                    if (responseCode == 502) {
+//                        throw new IOException("Flaky Update Center returned HTTP 502");
+//                    } else if (responseCode >= 400) {
+//                        throw new HttpResponseException(responseCode, request.getResponseMessage());
+//                    }
+//                } else if (!url.getProtocol().equalsIgnoreCase("file")) {
+//                    throw new IOException("Only http(s) and file URLs are supported");
+//                }
+                { // file case
+                    if (url.getProtocol().equalsIgnoreCase("file")) {
+                        try (InputStream in = url.openConnection().getInputStream();
+                             OutputStream out = file.getFileOutputStream()) {
+                        }
+                        return;
                     }
-                } else if (!url.getProtocol().equalsIgnoreCase("file")) {
-                    throw new IOException("Only http(s) and file URLs are supported");
+                }
+                ContentResponse contentResponse = httpClient.GET(url.toString());
+                if (contentResponse.getStatus() == 502) {
+                    throw new IOException("Flaky Update Center returned HTTP 502");
+                } else if (contentResponse.getStatus() >= 400) {
+                    throw new HttpResponseException(contentResponse.getStatus(), contentResponse.getReason());
                 }
                 long fileSize;
-                try (InputStream in = con.getInputStream();
+                try (InputStream in = new ByteArrayInputStream(contentResponse.getContent());
                      OutputStream out = file.getFileOutputStream()) {
                     fileSize = IOUtils.copyLarge(in, out);
                 }
@@ -156,6 +193,8 @@ public class Downloader {
                 } else {
                     throw ioEx;
                 }
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                throw new RuntimeException(e);
             }
         }
 

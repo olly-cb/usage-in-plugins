@@ -82,9 +82,8 @@ public class Main {
         options.buildCache();
 
         final ExecutorService executor = Executors.newWorkStealingPool();
-        final Downloader downloader = new Downloader(executor, options.maxConcurrentDownloads);
         final long start = System.currentTimeMillis();
-        try {
+        try (final Downloader downloader = new Downloader(executor, options.maxConcurrentDownloads)) {
             final DeprecatedApi deprecatedApi = new DeprecatedApi();
             addClassesToAnalyze(deprecatedApi);
             List<String> updateCenterURLs = options.getUpdateCenterURLs();
