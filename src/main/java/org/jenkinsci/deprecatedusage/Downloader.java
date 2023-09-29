@@ -43,8 +43,6 @@ public class Downloader implements Closeable {
         concurrentDownloadsPermit = new Semaphore(maxConcurrentDownloads);
         // TODO more configuration
         this.httpClient = new HttpClient();
-        // maybe find something more "optimistic"
-        this.httpClient.setResponseBufferSize(Integer.MAX_VALUE);
         this.httpClient.start();
     }
 
