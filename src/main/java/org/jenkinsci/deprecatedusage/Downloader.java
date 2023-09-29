@@ -155,7 +155,9 @@ public class Downloader implements Closeable {
 //                } else if (!url.getProtocol().equalsIgnoreCase("file")) {
 //                    throw new IOException("Only http(s) and file URLs are supported");
 //                }
-                if (!url.getProtocol().equalsIgnoreCase("file")) {
+                if (!(url.getProtocol().equalsIgnoreCase("https")
+                        || url.getProtocol().equalsIgnoreCase("http")
+                        || url.getProtocol().equalsIgnoreCase("file"))) {
                     throw new IOException("Only http(s) and file URLs are supported");
                 }
                 { // file case
