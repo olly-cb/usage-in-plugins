@@ -4,6 +4,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -164,17 +166,18 @@ public class Downloader implements Closeable {
                         return;
                     }
                 }
-                ContentResponse contentResponse = httpClient
-                        .newRequest(url.toString())
-                        .timeout(5, TimeUnit.MINUTES) // TODO should be configurable
-                        .send();
-                if (contentResponse.getStatus() == 502) {
-                    throw new IOException("Flaky Update Center returned HTTP 502");
-                } else if (contentResponse.getStatus() >= 400) {
-                    throw new HttpResponseException(contentResponse.getStatus(), contentResponse.getReason());
+                InputStreamResponseListener listener = new InputStreamResponseListener();
+                httpClient.newRequest(url.toString())
+                            .send(listener);
+                // TODO configura this timeout
+                Response response = listener.get(5, TimeUnit.MINUTES);
+                if (response.getStatus() == 502) {
+                    response.abort(new IOException("Flaky Update Center returned HTTP 502"));
+                } else if (response.getStatus() >= 400) {
+                    response.abort(new HttpResponseException(response.getStatus(), response.getReason());
                 }
                 long fileSize;
-                try (InputStream in = new ByteArrayInputStream(contentResponse.getContent());
+                try (InputStream in = listener.getInputStream();
                      OutputStream out = file.getFileOutputStream()) {
                     fileSize = IOUtils.copyLarge(in, out);
                 }
