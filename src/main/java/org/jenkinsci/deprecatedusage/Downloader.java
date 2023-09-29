@@ -34,13 +34,14 @@ public class Downloader implements Closeable {
     private final ExecutorService executor;
     private final Semaphore concurrentDownloadsPermit;
 
-    private HttpClient httpClient;
+    private final HttpClient httpClient;
 
     public Downloader(ExecutorService executor, int maxConcurrentDownloads) throws Exception {
         this.executor = executor;
         concurrentDownloadsPermit = new Semaphore(maxConcurrentDownloads);
         // TODO more configuration
         this.httpClient = new HttpClient();
+        this.httpClient.setIdleTimeout(5 * 60 * 1000);
         this.httpClient.start();
     }
 
