@@ -187,7 +187,7 @@ public class Downloader implements Closeable {
                 if (shouldRetryForException(ioEx) && retriesRemaining.getAndDecrement() > 0) {
                     try {
                         System.out.printf("Failed to download %s due to %s, will retry in 750ms%n", StringUtils.isEmpty(ioEx.getMessage()) ? ioEx.getClass().getName() : ioEx.getMessage() , file.getUrl());
-                        Thread.sleep(7500L);
+                         Thread.sleep(7500L);
                     } catch (InterruptedException ex) {
                         IOException toThrow = new IOException("InterruptedException in sleep backoff", ex);
                         toThrow.addSuppressed(ioEx);
