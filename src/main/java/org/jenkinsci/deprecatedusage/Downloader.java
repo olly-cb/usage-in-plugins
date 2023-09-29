@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,6 +43,8 @@ public class Downloader implements Closeable {
         concurrentDownloadsPermit = new Semaphore(maxConcurrentDownloads);
         // TODO more configuration
         this.httpClient = new HttpClient();
+        // maybe find something more "optimistic"
+        this.httpClient.setResponseBufferSize(Integer.MAX_VALUE);
         this.httpClient.start();
     }
 
@@ -163,7 +166,10 @@ public class Downloader implements Closeable {
                         return;
                     }
                 }
-                ContentResponse contentResponse = httpClient.GET(url.toString());
+                ContentResponse contentResponse = httpClient
+                        .newRequest(url.toString())
+                        .timeout(5, TimeUnit.MINUTES) // TODO should be configurable
+                        .send();
                 if (contentResponse.getStatus() == 502) {
                     throw new IOException("Flaky Update Center returned HTTP 502");
                 } else if (contentResponse.getStatus() >= 400) {
